@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Repositorio de Mini Apps</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="manifest" href="manifest.json">
+    <link class="reajuste-pwa" rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111827">
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen py-8 px-4">
 
@@ -19,30 +20,42 @@
             
             <div class="bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-700 flex flex-col justify-between">
                 <div>
-                    <span class="text-2xl">💵</span>
+                    <span class="text-2xl" role="img" aria-label="Dinero">💵</span>
                     <h3 class="text-xl font-bold text-white mt-2 mb-1">Calculadora de Deudas</h3>
                     <p class="text-gray-400 text-sm">Calcula reajustes de deudas históricas mediante el valor de la UF e IPC en tiempo real.</p>
                 </div>
-                <a href="./apps/calculadora-deuda/index.html" class="mt-4 block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                <a href="./apps/calculadora-deuda/index.html" class="mt-4 block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow">
                     Abrir Herramienta
                 </a>
             </div>
-
-            <div class="bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-700 border-dashed flex flex-col justify-center items-center text-center opacity-60">
+            <div class="bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-700 flex flex-col justify-between">
+                <div>
+                    <span class="text-2xl" role="img" aria-label="Viajes">💱</span>
+                    <h3 class="text-xl font-bold text-white mt-2 mb-1">Convertidor Viajes</h3>
+                    <p class="text-gray-400 text-sm">Conversión de divisas con geolocalización, soporte offline y módulo de compras con descuento.</p>
+                </div>
+                <a href="./apps/convertidor-viajes/index.html" class="mt-4 block text-center bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow">
+                    Abrir Herramienta
+                </a>
+            </div>
+            <div class="bg-gray-800/50 p-5 rounded-xl border border-gray-700 border-dashed flex flex-col justify-center items-center text-center opacity-60">
                 <span class="text-3xl text-gray-500">+</span>
                 <h3 class="text-lg font-semibold text-gray-400 mt-2">Nueva Herramienta</h3>
-                <p class="text-gray-500 text-xs mt-1">Copia el HTML generado por Gemini dentro de la carpeta /apps/ y lístala aquí.</p>
+                <p class="text-gray-500 text-xs mt-1">Copia el HTML generado dentro de la carpeta /apps/ y lístala aquí.</p>
             </div>
-
-        </div>
+            </div>
     </div>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado con éxito para almacenamiento local.'))
-                    .catch(err => console.error('Error al registrar Service Worker:', err));
+                    .then(reg => {
+                        console.log('Service Worker registrado con éxito para almacenamiento local:', reg.scope);
+                    })
+                    .catch(err => {
+                        console.error('Error al registrar el Service Worker:', err);
+                    });
             });
         }
     </script>
