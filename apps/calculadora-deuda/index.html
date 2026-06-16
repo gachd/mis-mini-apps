@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Deudas Reajustables</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen py-8 px-4 flex justify-center items-center">
+
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div>
+            <h2 class="text-2xl font-bold text-blue-700 mb-6 flex items-center gap-2">
+                💵 Calculadora de Deudas
+            </h2>
+            
+            <form id="deudaForm" class="space-y-4" onsubmit="event.preventDefault(); calcularDeuda();">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Monto Original de la Deuda ($)</label>
+                    <input type="text" id="montoOriginal" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono" value="1.500.000" oninput="formatearInputMiles(this)" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha Préstamo</label>
+                        <input type="date" id="fechaPrestamo" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onchange="consultarUfHistoricaAPI(this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Hoy</label>
+                        <input type="date" id="fechaHoy" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 outline-none" required readonly>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-3 rounded-lg space-y-3">
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs font-bold text-blue-800 uppercase tracking-wider">Reajuste Histórico (UF)</p>
+                        <span id="statusApi" class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">Cargando UF...</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">UF Fecha Préstamo</label>
+                            <input type="text" id="ufHistorica" class="w-full p-2 border border-gray-300 rounded-lg bg-white font-mono" value="0" oninput="formatearInputMiles(this)">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">UF Actual</label>
+                            <input type="text" id="ufActual" class="w-full p-2 border border-gray-300 rounded-lg bg-white font-mono" value="0" oninput="formatearInputMiles(this)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-lg space-y-3">
+                    <p class="text-xs font-bold text-amber-800 uppercase tracking-wider">Intereses Adicionales</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Tasa Anual (%)</label>
+                            <input type="number" step="0.1" id="tasaInteres" class="w-full p-2 border border-gray-300 rounded-lg bg-white" value="0" oninput="calcularDeuda()">
+                        </div>
+                        <div class="flex items-end">
+                            <span class="text-xs text-gray-500 pb-2">Dejar en 0 si no aplica interés.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 p-3 rounded-lg space-y-3">
+                    <p class="text-xs font-bold text-green-800 uppercase tracking-wider">Proyección de Cuotas Futuras</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Número de Cuotas</label>
+                            <input type="number" id="numCuotas" class="w-full p-2 border border-gray-300 rounded-lg bg-white" value="12" min="1" oninput="calcularDeuda()" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Inflación Mensual Est. (%)</label>
+                            <input type="number" step="0.01" id="inflacionEstimada" class="w-full p-2 border border-gray-300 rounded-lg bg-white" value="0.3" oninput="calcularDeuda()" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow">
+                    Calcular Deuda Actualizada
+                </button>
+            </form>
+        </div>
+
+        <div class="border-t md:border-t-0 md:border-l border-gray-200 pt-6 md:pt-0 md:pl-6 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-gray-700 mb-4">📊 Resumen del Cálculo</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Monto Original:</span>
+                        <span class="font-semibold" id="resMontoOriginal">$0</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Equivalente en UF inicial:</span>
+                        <span class="font-semibold text-blue-600" id="resUfInicial">0,00 UF</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Deuda por UF hoy:</span>
+                        <span class="font-semibold" id="resDeudaUf">$0</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Intereses Generados:</span>
+                        <span class="font-semibold text-amber-600" id="resIntereses">$0</span>
+                    </div>
+                    <div class="flex justify-between bg-gray-900 text-white p-3 rounded-lg shadow-inner mt-4">
+                        <span class="font-bold text-gray-300">TOTAL DEUDA HOY:</span>
+                        <span class="font-bold text-xl text-emerald-400" id="resTotalHoy">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex-1 flex flex-col min-h-[250px]">
+                <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-2">Proyección de Cuotas</h4>
+                <div class="overflow-y-auto border border-gray-200 rounded-lg flex-1 max-h-[260px] bg-gray-50">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-gray-200 text-gray-700 sticky top-0">
+                            <tr>
+                                <th class="p-2 border-b">N° Cuota</th>
+                                <th class="p-2 border-b">Valor Base (Hoy)</th>
+                                <th class="p-2 border-b">Valor Proyectado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCuotas" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2 leading-tight">
+                    *El valor proyectado simula cuántos pesos físicos se requerirán en ese mes específico para retener el mismo valor adquisitivo real de la cuota base.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Respaldo estático offline por si falla internet o la API
+        const respaldoHistoricoUF = {
+            2000: 15400, 2001: 16000, 2002: 16400, 2003: 16900, 2004: 17100,
+            2005: 17500, 2006: 18133, 2007: 18800, 2008: 20900, 2009: 21000,
+            2010: 21250, 2011: 22000, 2012: 22600, 2013: 22900, 2014: 24000,
+            2015: 25100, 2016: 26000, 2017: 26600, 2018: 27200, 2019: 27900,
+            2020: 28700, 2021: 29800, 2022: 33000, 2023: 36000, 2024: 37500,
+            2025: 39200, 2026: 40779
+        };
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. Establecer Fecha de Hoy de manera dinámica
+            const hoy = new Date();
+            const hoyString = hoy.toISOString().split('T')[0];
+            document.getElementById("fechaHoy").value = hoyString;
+
+            // 2. Establecer por defecto la fecha del préstamo hace exactamente 3 años atrás
+            const haceTresAnos = new Date();
+            haceTresAnos.setFullYear(hoy.getFullYear() - 3);
+            const prestamoPorDefectoString = haceTresAnos.toISOString().split('T')[0];
+            document.getElementById("fechaPrestamo").value = prestamoPorDefectoString;
+
+            // 3. Consultar valores en la API (Primero el valor actual y luego el de hace 3 años)
+            actualizarStatus("Conectando a API...", "amber");
+            await consultarUfActualAPI();
+            await consultarUfHistoricaAPI(prestamoPorDefectoString);
+        });
+
+        // Solicita el valor de la UF de hoy a la API de Mindicador
+        async function consultarUfActualAPI() {
+            try {
+                const response = await fetch('https://mindicador.cl/api/uf');
+                if (!response.ok) throw new Error('Error de red');
+                const data = await response.json();
+                const valorUf = Math.round(data.serie[0].valor);
+                
+                document.getElementById("ufActual").value = new Intl.NumberFormat('es-CL').format(valorUf);
+                actualizarStatus("Conectado (API)", "emerald");
+            } catch (error) {
+                console.warn("No se pudo obtener la UF actual de la API. Usando valor por defecto offline.");
+                document.getElementById("ufActual").value = new Intl.NumberFormat('es-CL').format(respaldoHistoricoUF[2026]);
+                actualizarStatus("Modo Offline", "red");
+            }
+        }
+
+        // Solicita el valor exacto de la UF para una fecha DD-MM-AAAA específica a la API
+        async function consultarUfHistoricaAPI(fechaString) {
+            if (!fechaString) return;
+            
+            // Reordenar formato de fecha YYYY-MM-DD a DD-MM-YYYY para la API
+            const partes = fechaString.split('-');
+            const fechaFormatoApi = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            const ano = parseInt(partes[0]);
+
+            actualizarStatus("Buscando UF histórica...", "amber");
+
+            try {
+                const response = await fetch(`https://mindicador.cl/api/uf/${fechaFormatoApi}`);
+                if (!response.ok) throw new Error('Error de consulta');
+                const data = await response.json();
+                
+                if (data.serie && data.serie.length > 0) {
+                    const valorUfHistorica = Math.round(data.serie[0].valor);
+                    document.getElementById("ufHistorica").value = new Intl.NumberFormat('es-CL').format(valorUfHistorica);
+                    actualizarStatus("Conectado (API)", "emerald");
+                } else {
+                    // Si el día consultado es festivo o fin de semana, la API puede no tener el dato exacto de ese día; usamos el promedio anual de respaldo
+                    usarRespaldoOffline(ano);
+                }
+            } catch (error) {
+                console.warn("Fallo de conexión en UF histórica. Aplicando respaldo de base de datos local.");
+                usarRespaldoOffline(ano);
+            }
+            calcularDeuda();
+        }
+
+        function usarRespaldoOffline(ano) {
+            const valorRespaldo = respaldoHistoricoUF[ano] || (ano < 2000 ? 15400 : 40779);
+            document.getElementById("ufHistorica").value = new Intl.NumberFormat('es-CL').format(valorRespaldo);
+            actualizarStatus("Modo Offline (Respaldo)", "red");
+        }
+
+        function actualizarStatus(texto, color) {
+            const el = document.getElementById("statusApi");
+            el.textContent = texto;
+            el.className = `text-[10px] px-2 py-0.5 rounded-full font-medium bg-${color}-200 text-${color}-800`;
+        }
+
+        // Agrega puntos de miles de manera visual dinámicamente mientras escribe el usuario
+        function formatearInputMiles(input) {
+            let valor = input.value.replace(/\D/g, "");
+            if(valor === "") {
+                input.value = "";
+                return;
+            }
+            input.value = new Intl.NumberFormat('es-CL').format(valor);
+            calcularDeuda();
+        }
+
+        function limpiarNumero(texto) {
+            return parseFloat(texto.replace(/\./g, "")) || 0;
+        }
+
+        function formatearMoneda(valor) {
+            return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(valor);
+        }
+
+        function calcularDeuda() {
+            const montoOriginal = limpiarNumero(document.getElementById("montoOriginal").value);
+            const fechaPrestamo = new Date(document.getElementById("fechaPrestamo").value);
+            const fechaHoy = new Date(document.getElementById("fechaHoy").value);
+            const ufHistorica = limpiarNumero(document.getElementById("ufHistorica").value) || 1;
+            const ufActual = limpiarNumero(document.getElementById("ufActual").value) || 1;
+            const tasaInteresAnual = (parseFloat(document.getElementById("tasaInteres").value) || 0) / 100;
+            const numCuotas = parseInt(document.getElementById("numCuotas").value) || 1;
+            const inflacionMensual = (parseFloat(document.getElementById("inflacionEstimada").value) || 0) / 100;
+
+            // 1. Reajuste por UF
+            const deudaEnUf = montoOriginal / ufHistorica;
+            const deudaActualReajustada = deudaEnUf * ufActual;
+
+            // 2. Cálculo del tiempo exacto e interés compuesto
+            const diferenciaTiempo = fechaHoy - fechaPrestamo;
+            const diasTranscurridos = Math.max(0, diferenciaTiempo / (1000 * 60 * 60 * 24));
+            const anosTranscurridos = diasTranscurridos / 365.25;
+
+            let deudaTotalHoy = deudaActualReajustada;
+            let interesesAcumulados = 0;
+
+            if (tasaInteresAnual > 0 && anosTranscurridos > 0) {
+                deudaTotalHoy = deudaActualReajustada * Math.pow((1 + tasaInteresAnual), anosTranscurridos);
+                interesesAcumulados = deudaTotalHoy - deudaActualReajustada;
+            }
+
+            // 3. Cálculo de Cuotas Proyectadas
+            const cuotaBaseHoy = deudaTotalHoy / numCuotas;
+            const tbody = document.getElementById("tablaCuotas");
+            tbody.innerHTML = ""; 
+
+            for (let mes = 1; mes <= numCuotas; mes++) {
+                const cuotaProyectada = cuotaBaseHoy * Math.pow((1 + inflacionMensual), mes);
+                
+                const fila = document.createElement("tr");
+                fila.className = "hover:bg-white transition-colors";
+                fila.innerHTML = `
+                    <td class="p-2 font-medium text-gray-500">Cuota ${mes}</td>
+                    <td class="p-2">${formatearMoneda(cuotaBaseHoy)}</td>
+                    <td class="p-2 font-semibold text-emerald-600">${formatearMoneda(cuotaProyectada)}</td>
+                `;
+                tbody.appendChild(fila);
+            }
+
+            // 4. Actualizar interfaz de Resultados con formatos
+            document.getElementById("resMontoOriginal").textContent = formatearMoneda(montoOriginal);
+            document.getElementById("resUfInicial").textContent = `${deudaEnUf.toFixed(2)} UF`;
+            document.getElementById("resDeudaUf").textContent = formatearMoneda(deudaActualReajustada);
+            document.getElementById("resIntereses").textContent = formatearMoneda(interesesAcumulados);
+            document.getElementById("resTotalHoy").textContent = formatearMoneda(deudaTotalHoy);
+        }
+    </script>
+</body>
+</html>
