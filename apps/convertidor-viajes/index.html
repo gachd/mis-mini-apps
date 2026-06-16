@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Convertidor Viajes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        /* Optimización para evitar comportamientos extraños con teclados virtuales */
+        input:focus {
+            font-size: 16px !important; /* Android/iOS no harán zoom molesto si el tamaño base es >= 16px */
+        }
+        /* Ocultar flechas nativas de inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen py-4 px-4 flex justify-center items-center font-sans selection:bg-blue-600">
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-5 w-full max-w-5xl">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-gray-800 pb-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-white">Convertidor Viajes</h1>
+                    <p class="text-xs text-gray-400">Conversión inteligente offline para aventureros</p>
+                </div>
+            </div>
+            
+            <div class="text-right flex flex-col items-center sm:items-end">
+                <span id="txtEstado" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    Detectando ubicación...
+                </span>
+                <span id="txtUltimaAct" class="text-[10px] text-gray-500 mt-1">Última actualización: N/A</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div class="bg-gray-950/40 border border-gray-800/60 p-4 rounded-xl space-y-4">
+                <h2 class="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                    <span>💱</span> Convertidor Principal
+                </h2>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Monto a convertir</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-gray-500 font-mono text-base font-bold">$</span>
+                        <input type="text" id="inpMontoPrincipal" class="w-full bg-gray-900 border border-gray-700 rounded-lg py-2.5 pl-8 pr-4 text-white font-mono text-base font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" value="100" oninput="procesarInputPrincipal(this)">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Moneda Origen</label>
+                        <select id="selMonedaOrigen" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white font-medium focus:border-blue-500 outline-none" onchange="calcularConversionPrincipal()">
+                            <option value="USD" selected>USD - Dólar Estadounidense</option>
+                            <option value="CLP">CLP - Peso Chileno</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="ARS">ARS - Peso Argentino</option>
+                            <option value="BRL">BRL - Real Brasileño</option>
+                            <option value="COP">COP - Peso Colombiano</option>
+                            <option value="MXN">MXN - Peso Mexicano</option>
+                            <option value="PEN">PEN - Sol Peruano</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Moneda Destino (Local)</label>
+                        <select id="selMonedaDestino" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white font-medium focus:border-blue-500 outline-none" onchange="calcularConversionPrincipal()">
+                            <option value="USD">USD - Dólar Estadounidense</option>
+                            <option value="CLP" selected>CLP - Peso Chileno</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="ARS">ARS - Peso Argentino</option>
+                            <option value="BRL">BRL - Real Brasileño</option>
+                            <option value="COP">COP - Peso Colombiano</option>
+                            <option value="MXN">MXN - Peso Mexicano</option>
+                            <option value="PEN">PEN - Sol Peruano</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/80 border border-gray-800 p-4 rounded-xl text-center shadow-inner">
+                    <p class="text-xs text-gray-400 font-medium">Resultado de conversión</p>
+                    <p id="lblResultadoPrincipal" class="text-2xl font-black text-emerald-400 tracking-tight mt-1">0,00 CLP</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-950/40 border border-gray-800/60 p-4 rounded-xl space-y-3.5 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 mb-3">
+                        <span>🧮</span> Calculadora de Compras & Descuentos
+                    </h2>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Precio Original</label>
+                            <input type="text" id="inpCalcPrecio" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white font-mono text-base font-bold focus:border-amber-500 outline-none" value="50,00" oninput="procesarInputCalc(this)">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Descuento (%)</label>
+                            <input type="number" id="inpCalcDescuento" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white font-mono text-base font-bold focus:border-amber-500 outline-none" value="30" min="0" max="100" oninput="ejecutarCalculadora()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Moneda del Precio</label>
+                            <select id="selCalcMonedaOrigen" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-xs focus:border-amber-500 outline-none" onchange="ejecutarCalculadora()">
+                                <option value="USD" selected>USD ($)</option>
+                                <option value="CLP">CLP ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="ARS">ARS ($)</option>
+                                <option value="BRL">BRL (R$)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1">Convertir Total a</label>
+                            <select id="selCalcMonedaDestino" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-xs focus:border-amber-500 outline-none" onchange="ejecutarCalculadora()">
+                                <option value="USD">USD ($)</option>
+                                <option value="CLP" selected>CLP ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="ARS">ARS ($)</option>
+                                <option value="BRL">BRL (R$)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800 grid grid-cols-2 gap-2 text-center mt-3 shadow-inner">
+                    <div class="border-r border-gray-800">
+                        <span class="text-[10px] uppercase font-bold text-gray-500">Con Descuento</span>
+                        <div id="lblCalcPrecioDescuento" class="text-base font-black text-white mt-0.5">0,00 USD</div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-amber-400">Equivalencia Final</span>
+                        <div id="lblCalcTotalConvertido" class="text-base font-black text-amber-400 mt-0.5">0,00 CLP</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+    </div>
+
+    <script>
+        // Base de datos de tasas fallback offline por si el viajero no tiene internet en ruta
+        const tasasBaseOffline = {
+            "USD": 1.0, "CLP": 930.0, "EUR": 0.92, "ARS": 900.0, "BRL": 5.25, "COP": 3900.0, "MXN": 17.5, "PEN": 3.75
+        };
+
+        let baseTasasActuales = { ...tasasBaseOffline };
+        let monedaLocalDetectada = "CLP";
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            cargarDatosDesdeLocalStorage();
+            await inicializarUbicacionYTasas();
+        });
+
+        // 1. CONTROL DE APIS Y LOCALSTORAGE
+        async function inicializarUbicacionYTasas() {
+            // Intentar detectar ubicación geográfica usando ipapi (No requiere api_key)
+            try {
+                const resIp = await fetch('https://ipapi.co/json/');
+                if(resIp.ok) {
+                    const dataIp = await resIp.json();
+                    if(dataIp.currency && baseTasasActuales[dataIp.currency]) {
+                        monedaLocalDetectada = dataIp.currency;
+                        document.getElementById("selMonedaDestino").value = monedaLocalDetectada;
+                        document.getElementById("selCalcMonedaDestino").value = monedaLocalDetectada;
+                    }
+                }
+            } catch(e) {
+                console.warn("No se pudo resolver la geolocalización. Se usará CLP por defecto.");
+            }
+
+            // Intentar refrescar la base de datos de conversión desde la API pública
+            try {
+                const resTasas = await fetch('https://open.er-api.com/v6/latest/USD');
+                if(!resTasas.ok) throw new Error("Fallo al conectar con servidor de cambios.");
+                const data = await resTasas.json();
+                
+                baseTasasActuales = data.rates;
+                const timestamp = new Date().toLocaleString('es-CL');
+                
+                // Persistir en local
+                localStorage.setItem("cache_tasas", JSON.stringify(baseTasasActuales));
+                localStorage.setItem("cache_timestamp", timestamp);
+
+                document.getElementById("txtEstado").textContent = "Conectado (API)";
+                document.getElementById("txtEstado").className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                document.getElementById("txtUltimaAct").textContent = `Última actualización: ${timestamp}`;
+            } catch (err) {
+                console.warn("Trabajando en modo offline. Se cargan tasas desde el almacenamiento local.");
+                document.getElementById("txtEstado").textContent = "Modo Offline";
+                document.getElementById("txtEstado").className = "text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30";
+            }
+
+            // Forzar cálculos iniciales en pantalla
+            calcularConversionPrincipal();
+            ejecutarCalculadora();
+        }
+
+        function cargarDatosDesdeLocalStorage() {
+            const cache = localStorage.getItem("cache_tasas");
+            const time = localStorage.getItem("cache_timestamp");
+            if(cache) {
+                baseTasasActuales = JSON.parse(cache);
+            }
+            if(time) {
+                document.getElementById("txtUltimaAct").textContent = `Última actualización: ${time}`;
+            }
+        }
+
+        // 2. MÁSCARAS DE INGRESO NUMÉRICO ("1.000,00")
+        function procesarInputPrincipal(input) {
+            formatearMascaraMoneda(input);
+            calcularConversionPrincipal();
+        }
+
+        function procesarInputCalc(input) {
+            formatearMascaraMoneda(input);
+            ejecutarCalculadora();
+        }
+
+        function formatearMascaraMoneda(input) {
+            // Guardar posición del cursor para evitar que brinque al escribir
+            let cursorPosition = input.selectionStart;
+            let originalLength = input.value.length;
+
+            // Remover caracteres no válidos, excepto dígitos y la coma decimal
+            let limpio = input.value.replace(/[^0-9,]/g, "");
+            
+            // Asegurar que solo exista una única coma decimal
+            let partes = limpio.split(",");
+            if (partes.length > 2) {
+                limpio = partes[0] + "," + partes.slice(1).join("");
+                partes = limpio.split(",");
+            }
+
+            // Formatear la sección entera con puntos de miles
+            let parteEntera = partes[0];
+            if (parteEntera !== "") {
+                let num = parseInt(parteEntera.replace(/\./g, ""), 10);
+                if (!isNaN(num)) {
+                    parteEntera = new Intl.NumberFormat('es-CL').format(num);
+                } else {
+                    parteEntera = "";
+                }
+            }
+            
+            // Reconstruir valor final visual
+            let resultadoFinal = parteEntera;
+            if (partes.length === 2) {
+                resultadoFinal += "," + partes[1].substring(0, 2); // Máximo 2 decimales
+            }
+            
+            input.value = resultadoFinal;
+
+            // Ajustar posición del cursor tras formatear
+            let newLength = input.value.length;
+            cursorPosition = cursorPosition + (newLength - originalLength);
+            input.setSelectionRange(cursorPosition, cursorPosition);
+        }
+
+        function convertirTextoANumero(texto) {
+            if(!texto) return 0;
+            // Remover puntos de miles y reemplazar coma decimal por punto estándar
+            let plano = texto.replace(/\./g, "").replace(",", ".");
+            return parseFloat(plano) || 0;
+        }
+
+        function formatearSalidaMoneda(valor, codMoneda) {
+            // Formatea números con puntos para miles y comas para decimales de forma segura
+            let formateador = new Intl.NumberFormat('es-CL', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(valor);
+            return `${formateador} ${codMoneda}`;
+        }
+
+        // 3. MOTORES DE CÁLCULO
+        function calcularConversionPrincipal() {
+            const monto = convertirTextoANumero(document.getElementById("inpMontoPrincipal").value);
+            const origen = document.getElementById("selMonedaOrigen").value;
+            const destino = document.getElementById("selMonedaDestino").value;
+
+            if(monto === 0) {
+                document.getElementById("lblResultadoPrincipal").textContent = formatearSalidaMoneda(0, destino);
+                return;
+            }
+
+            // Calcular conversión cruzada pasando por base USD
+            const montoEnUSD = monto / baseTasasActuales[origen];
+            const montoFinal = montoEnUSD * baseTasasActuales[destino];
+
+            document.getElementById("lblResultadoPrincipal").textContent = formatearSalidaMoneda(montoFinal, destino);
+        }
+
+        function ejecutarCalculadora() {
+            const precioOriginal = convertirTextoANumero(document.getElementById("inpCalcPrecio").value);
+            const porcDescuento = parseFloat(document.getElementById("inpCalcDescuento").value) || 0;
+            const monedaTienda = document.getElementById("selCalcMonedaOrigen").value;
+            const monedaSalida = document.getElementById("selCalcMonedaDestino").value;
+
+            // Calcular descuento aplicado
+            const precioConDescuento = precioOriginal * (1 - (porcDescuento / 100));
+            
+            // Convertir equivalencia de divisas
+            const totalEnUSD = precioConDescuento / baseTasasActuales[monedaTienda];
+            const totalFinalEquivalente = totalEnUSD * baseTasasActuales[monedaSalida];
+
+            // Renderizar resultados en pantalla
+            document.getElementById("lblCalcPrecioDescuento").textContent = formatearSalidaMoneda(precioConDescuento, monedaTienda);
+            document.getElementById("lblCalcTotalConvertido").textContent = formatearSalidaMoneda(totalFinalEquivalente, monedaSalida);
+        }
+    </script>
+</body>
+</html>
