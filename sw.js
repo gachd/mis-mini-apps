@@ -6,7 +6,8 @@ const urlToCache = [
   './index.html',
   './manifest.json',
   './apps/calculadora-deuda/index.html',
-  'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4' // Guarda el framework de diseño en local
+  './apps/convertidor-viajes/index.html', // <--- Agregar así en tu sw.js cada app nueva
+  'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4'
 ];
 
 // Instala el Service Worker y almacena los archivos en la caché del dispositivo
